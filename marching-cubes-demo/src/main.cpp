@@ -265,14 +265,14 @@ void generate_cube() {
 	// Initialize cube
 	if (cube_buffer_data) delete[] cube_buffer_data;
 	cube_buffer_data = new Vertex[8];
-	cube_buffer_data[0] = { {-cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[1] = { {cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[2] = { {cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[3] = { {-cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[4] = { {-cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[5] = { {cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[6] = { {cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[7] = { {-cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[0] = { {-cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[1] = { {cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[2] = { {cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[3] = { {-cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[4] = { {-cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[5] = { {cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[6] = { {cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[7] = { {-cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::White };
 	// Create cube vertex buffer
 	cube_buffer_desc.ByteWidth = 8 * sizeof(Vertex);
 	cube_buffer_desc.Usage = D3D11_USAGE_IMMUTABLE;
@@ -631,14 +631,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 
 	// Initialize cube
 	cube_buffer_data = new Vertex[8];
-	cube_buffer_data[0] = { {-cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[1] = { {cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[2] = { {cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[3] = { {-cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[4] = { {-cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[5] = { {cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[6] = { {cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
-	cube_buffer_data[7] = { {-cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[0] = { {-cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[1] = { {cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[2] = { {cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[3] = { {-cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[4] = { {-cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[5] = { {cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[6] = { {cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::White };
+	cube_buffer_data[7] = { {-cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::White };
 	// Create cube vertex buffer
 	cube_buffer_desc.ByteWidth = 8 * sizeof(Vertex);
 	cube_buffer_desc.Usage = D3D11_USAGE_IMMUTABLE;
