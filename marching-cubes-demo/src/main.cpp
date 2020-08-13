@@ -29,11 +29,27 @@ namespace Colors {
 	XMGLOBALCONST DirectX::XMFLOAT4 Grey = { 0.5f, 0.5f, 0.5f, 1.0f };
 }
 
+typedef struct Vector3 {
+	float x, y, z;
+	Vector3() : x(0), y(0), z(0) {}
+	Vector3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+	inline Vector3 operator+(Vector3 other) { return Vector3(x + other.x, y + other.y, z + other.z); }
+	inline Vector3 operator-(Vector3 other) { return Vector3(x - other.x, y - other.y, z - other.z); }
+	inline Vector3 operator+(float other) { return Vector3(x + other, y + other, z + other); }
+	inline Vector3 operator-(float other) { return Vector3(x - other, y - other, z - other); }
+	inline Vector3 operator/(float other) { return Vector3(x / other, y / other, z / other); }
+} Vector3;
+inline Vector3 operator*(float other, Vector3 v) { return Vector3(v.x * other, v.y * other, v.z * other); }
+
 typedef struct Vertex {
 	DirectX::XMFLOAT3 position;
 	DirectX::XMFLOAT4 color;
 	DirectX::XMFLOAT3 normal;
 } Vertex;
+
+float map(float input, float input_start, float input_end, float output_start, float output_end) {
+	return output_start + ((output_end - output_start) / (input_end - input_start)) * (input - input_start);
+}
 
 // Window parameters
 int screen_width = 1280;
@@ -45,6 +61,7 @@ ID3D11DeviceContext* d3d_context;
 
 // Vertex buffer, its buffer description and its subresource data
 Vertex* vertex_buffer_data = nullptr;
+std::vector<Vertex> mesh;
 int vertices_count = 0;
 D3D11_BUFFER_DESC vertex_buffer_desc;
 D3D11_SUBRESOURCE_DATA vertex_subresource_data;
@@ -59,45 +76,176 @@ D3D11_BUFFER_DESC vertex_indices_desc;
 D3D11_SUBRESOURCE_DATA vertex_indices_subresource_data;
 ID3D11Buffer* vertex_index_buffer = nullptr;
 
+// Random number generator
 std::default_random_engine generator;
-std::uniform_int_distribution<int> distribution(0, 1);
+std::uniform_real_distribution<float> distribution(0, 1);
 auto random = std::bind(distribution, generator);
 
 // Marching cube parameters
 float threshold = 0.5f;
-int resolution = 10;
+int resolution = 4;
 bool interpolation = true;
+float cube_size = 2.0f;
 void generate_marching_cubes_mesh() {
+	mesh.clear();
 	// Traverse the space with the given resolution storing random values for each point
 	std::vector<float> grid;
-	grid.reserve(resolution * resolution * resolution);
-	for (int i = 0; i <= 2; i += 2.0f/resolution) {
-		for (int j = 0; j <= 2; j += 2.0f / resolution) {
-			for (int k = 0; k <= 2; k += 2.0f / resolution) {
+	float vertex_delta = cube_size / (resolution - 1);
+	for (int i = 0; i < resolution; i++) {
+		for (int j = 0; j < resolution; j++) {
+			for (int k = 0; k < resolution; k++) {
 				grid.push_back(random());
 			}
 		}
 	}
 	// Traverse again with the marching cubes algorithm
-	for (int i = 0; i < 2; i += 2.0f / resolution) {
-		for (int j = 0; j < 2; j += 2.0f / resolution) {
-			for (int k = 0; k < 2; k += 2.0f / resolution) {
+	for (float i = 0; i < resolution-1; i++) {
+		for (float j = 0; j < resolution-1; j++) {
+			for (float k = 0; k < resolution-1; k++) {
 				// Get configuration index
 				int grid_index = resolution*resolution * i + resolution * j + k;
 				int cube_index = 0;
-				if (grid[grid_index] < threshold) { cube_index |= 1; }
-				if (grid[grid_index + 1] < threshold) { cube_index |= 2; }
-				if (grid[grid_index + resolution] < threshold) { cube_index |= 4; }
-				if (grid[grid_index + resolution + 1] < threshold) { cube_index |= 8; }
-				if (grid[grid_index + resolution * resolution] < threshold) { cube_index |= 16; }
-				if (grid[grid_index + resolution * resolution + 1] < threshold) { cube_index |= 32; }
-				if (grid[grid_index + resolution * resolution + resolution] < threshold) { cube_index |= 64; }
-				if (grid[grid_index + resolution * resolution + resolution + 1] < threshold) { cube_index |= 128; }
+				float V0 = grid[grid_index];
+				float V1 = grid[grid_index + 1];
+				float V2 = grid[grid_index + 1 + resolution];
+				float V3 = grid[grid_index + resolution];
+				float V4 = grid[grid_index + resolution * resolution];
+				float V5 = grid[grid_index + resolution * resolution + 1];
+				float V6 = grid[grid_index + resolution * resolution + resolution + 1];
+				float V7 = grid[grid_index + resolution * resolution + resolution];
+				if (V0 < threshold) { cube_index |= 1; }
+				if (V1 < threshold) { cube_index |= 2; }
+				if (V2 < threshold) { cube_index |= 4; }
+				if (V3 < threshold) { cube_index |= 8; }
+				if (V4 < threshold) { cube_index |= 16; }
+				if (V5 < threshold) { cube_index |= 32; }
+				if (V6 < threshold) { cube_index |= 64; }
+				if (V7 < threshold) { cube_index |= 128; }
+				float x = map(k, 0.0f, resolution - 1, -cube_size / 2.0f, cube_size / 2.0f);
+				float y = map(i, 0.0f, resolution - 1, -cube_size / 2.0f, cube_size / 2.0f);
+				float z = map(j, 0.0f, resolution - 1, -cube_size / 2.0f, cube_size / 2.0f);
+				Vector3 P0 = Vector3(x, y, z);
+				Vector3 P1 = Vector3(x + vertex_delta, y, z);
+				Vector3 P2 = Vector3(x + vertex_delta, y, z + vertex_delta);
+				Vector3 P3 = Vector3(x, y, z + vertex_delta);
+				Vector3 P4 = Vector3(x, y + vertex_delta, z);
+				Vector3 P5 = Vector3(x + vertex_delta, y + vertex_delta, z);
+				Vector3 P6 = Vector3(x + vertex_delta, y + vertex_delta, z + vertex_delta);
+				Vector3 P7 = Vector3(x, y + vertex_delta, z + vertex_delta);
 				// Lookup the edge and triangle table with that index
-				// Add vertices and indices of new triangles to buffer
+				Vector3 cube_vertices[12];
+				int edges = edgeTable[cube_index];
+				for (int l = 0; l < 12; l++) {
+					bool is_edge = (edges >> l) & 1;
+					if (is_edge) {
+						switch (l) {
+						case 0: {
+							cube_vertices[l] = P0 + (threshold - V0) * (P1 - P0) / (V1 - V0);
+							break;
+						}
+						case 1: {
+							cube_vertices[l] = P1 + (threshold - V1) * (P2 - P1) / (V2 - V1);
+							break;
+						}
+						case 2: {
+							cube_vertices[l] = P2 + (threshold - V2) * (P3 - P2) / (V3 - V2);
+							break;
+						}
+						case 3: {
+							cube_vertices[l] = P3 + (threshold - V3) * (P0 - P3) / (V0 - V3);
+							break;
+						}
+						case 4: {
+							cube_vertices[l] = P4 + (threshold - V4) * (P5 - P4) / (V5 - V4);
+							break;
+						}
+						case 5: {
+							cube_vertices[l] = P5 + (threshold - V5) * (P6 - P5) / (V6 - V5);
+							break;
+						}
+						case 6: {
+							cube_vertices[l] = P6 + (threshold - V6) * (P7 - P6) / (V7 - V6);
+							break;
+						}
+						case 7: {
+							cube_vertices[l] = P7 + (threshold - V7) * (P4 - P7) / (V4 - V7);
+							break;
+						}
+						case 8: {
+							cube_vertices[l] = P0 + (threshold - V0) * (P4 - P0) / (V4 - V0);
+							break;
+						}
+						case 9: {
+							cube_vertices[l] = P1 + (threshold - V1) * (P5 - P1) / (V5 - V1);
+							break;
+						}
+						case 10: {
+							cube_vertices[l] = P2 + (threshold - V2) * (P6 - P2) / (V6 - V2);
+							break;
+						}
+						case 11: {
+							cube_vertices[l] = P3 + (threshold - V3) * (P7 - P3) / (V7 - V3);
+							break;
+						}
+						default: {
+							break;
+						}
+						}
+					}
+				}
+				// Triangulate calculated vertices
+				// Get the triangle indices from tri table and insert vertices into mesh in that order
+				int m = 0;
+				std::vector<int> tris;
+				while (triTable[cube_index][m] != -1) {
+					int tri1 = triTable[cube_index][m];
+					int tri2 = triTable[cube_index][m+1];
+					int tri3 = triTable[cube_index][m+2];
+					Vertex v1;
+					v1.position.x = cube_vertices[tri1].x;
+					v1.position.y = cube_vertices[tri1].y;
+					v1.position.z = cube_vertices[tri1].z;
+					v1.color = Colors::Grey;
+					Vertex v2;
+					v2.position.x = cube_vertices[tri2].x;
+					v2.position.y = cube_vertices[tri2].y;
+					v2.position.z = cube_vertices[tri2].z;
+					v2.color = Colors::Grey;
+					Vertex v3;
+					v3.position.x = cube_vertices[tri3].x;
+					v3.position.y = cube_vertices[tri3].y;
+					v3.position.z = cube_vertices[tri3].z;
+					v3.color = Colors::Grey;
+					DirectX::XMStoreFloat3(&v1.normal, DirectX::XMVector3Cross(DirectX::XMVectorSet(v2.position.x - v1.position.x,
+						v2.position.y - v1.position.y,
+						v2.position.z - v1.position.z, 0),
+						DirectX::XMVectorSet(v3.position.x - v1.position.x,
+							v3.position.y - v1.position.y,
+							v3.position.z - v1.position.z, 0)));
+					v2.normal = v1.normal;
+					v3.normal = v1.normal;
+					mesh.push_back(v1);
+					mesh.push_back(v2);
+					mesh.push_back(v3);
+					m+=3;
+				}
 			}
 		}
 	}
+
+	vertex_buffer_data = mesh.data();
+	vertices_count = mesh.size();
+	// Create cube vertex buffer
+	vertex_buffer_desc.ByteWidth = vertices_count * sizeof(Vertex);
+	vertex_buffer_desc.Usage = D3D11_USAGE_IMMUTABLE;
+	vertex_buffer_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertex_buffer_desc.CPUAccessFlags = 0;
+	vertex_buffer_desc.MiscFlags = 0;
+	vertex_buffer_desc.StructureByteStride = sizeof(Vertex);
+	vertex_subresource_data.pSysMem = vertex_buffer_data;
+	// Create hardware vertex buffer
+	if (vertex_buffer) vertex_buffer->Release();
+	d3d_device->CreateBuffer(&vertex_buffer_desc, &vertex_subresource_data, &vertex_buffer);
 }
 
 // Camera
@@ -195,12 +343,12 @@ LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
-	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
 		mouse_clicked = true;
 		previous_pos_x = GET_X_LPARAM(lParam);
 		previous_pos_y = GET_Y_LPARAM(lParam);
 		break;
-	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
 		mouse_clicked = false;
 		previous_pos_x = -1;
 		previous_pos_y = -1;
@@ -350,7 +498,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 	// Set culling mode to clockwise because we use a right handed coordinate system
 	D3D11_RASTERIZER_DESC rasterizer_desc;
 	rasterizer_desc.FillMode = D3D11_FILL_SOLID;
-	rasterizer_desc.CullMode = D3D11_CULL_BACK;
+	rasterizer_desc.CullMode = D3D11_CULL_NONE;
 	rasterizer_desc.FrontCounterClockwise = true;
 	rasterizer_desc.DepthBias = 0;
 	rasterizer_desc.SlopeScaledDepthBias = 0;
@@ -429,14 +577,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 
 	// Initialize cube
 	Vertex* cube_buffer_data = new Vertex[8];
-	cube_buffer_data[0] = { {-1, 1, -1}, Colors::Grey, {-1, 1, -1} };
-	cube_buffer_data[1] = { {1, 1, -1}, Colors::Grey, {1, 1, -1} };
-	cube_buffer_data[2] = { {1, 1, 1}, Colors::Grey, {1, 1, 1} };
-	cube_buffer_data[3] = { {-1, 1, 1}, Colors::Grey, {-1, 1, 1} };
-	cube_buffer_data[4] = { {-1, -1, -1}, Colors::Grey, {-1, -1, -1} };
-	cube_buffer_data[5] = { {1, -1, -1}, Colors::Grey, {1, -1, -1} };
-	cube_buffer_data[6] = { {1, -1, 1}, Colors::Grey, {1, -1, 1} };
-	cube_buffer_data[7] = { {-1, -1, 1}, Colors::Grey, {-1, -1, 1} };
+	cube_buffer_data[0] = { {-cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[1] = { {cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[2] = { {cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[3] = { {-cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[4] = { {-cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[5] = { {cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[6] = { {cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[7] = { {-cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
 	// Create cube vertex buffer
 	D3D11_BUFFER_DESC cube_buffer_desc;
 	cube_buffer_desc.ByteWidth = 8 * sizeof(Vertex);
@@ -498,6 +646,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 		nullptr,
 		&cube_vertex_shader);
 
+	//Generate marching cubes mesh
+	generate_marching_cubes_mesh();
+
 	// Initialize initial camera position and orientation
 	rotate_camera_orbital(30, 0);
 	rotate_camera_orbital(0, -45);
@@ -537,16 +688,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 		d3d_context->DrawIndexed(24, 0, 0);
 
 		// Draw mesh if any has been read
-		if (vertex_buffer_data && vertex_indices_data) {
+		if (vertex_buffer_data) {
 			// Set vertex and index buffer
 			d3d_context->IASetVertexBuffers(0, 1, &vertex_buffer, &stride, &offset);
-			d3d_context->IASetIndexBuffer(vertex_index_buffer, DXGI_FORMAT_R32_UINT, 0);
 			// Set primitive topology to triangle list
 			d3d_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			// Set vertex shader
 			d3d_context->VSSetShader(vertex_shader, nullptr, 0);
 			//Draw mesh
-			d3d_context->DrawIndexed(indices_count, 0, 0);
+			d3d_context->Draw(vertices_count, 0);
 		}
 
 		// Start the Dear ImGui frame
