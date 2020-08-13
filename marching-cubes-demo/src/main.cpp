@@ -77,7 +77,7 @@ D3D11_SUBRESOURCE_DATA vertex_indices_subresource_data;
 ID3D11Buffer* vertex_index_buffer = nullptr;
 
 // Random number generator
-std::default_random_engine generator;
+std::mt19937_64 generator;
 std::uniform_real_distribution<float> distribution(0, 1);
 auto random = std::bind(distribution, generator);
 
@@ -86,10 +86,11 @@ float threshold = 0.5f;
 int resolution = 4;
 bool interpolation = true;
 float cube_size = 2.0f;
-void generate_marching_cubes_mesh() {
-	mesh.clear();
+float mesh_color[3] = {0.75f, 0.75f, 0.75f};
+std::vector<float> grid;
+void generate_marching_cubes_grid() {
 	// Traverse the space with the given resolution storing random values for each point
-	std::vector<float> grid;
+	grid.clear();
 	float vertex_delta = cube_size / (resolution - 1);
 	for (int i = 0; i < resolution; i++) {
 		for (int j = 0; j < resolution; j++) {
@@ -98,6 +99,10 @@ void generate_marching_cubes_mesh() {
 			}
 		}
 	}
+}
+void generate_marching_cubes_mesh() {
+	mesh.clear();
+	float vertex_delta = cube_size / (resolution - 1);
 	// Traverse again with the marching cubes algorithm
 	for (float i = 0; i < resolution-1; i++) {
 		for (float j = 0; j < resolution-1; j++) {
@@ -140,51 +145,51 @@ void generate_marching_cubes_mesh() {
 					if (is_edge) {
 						switch (l) {
 						case 0: {
-							cube_vertices[l] = P0 + (threshold - V0) * (P1 - P0) / (V1 - V0);
+							cube_vertices[l] = !interpolation ? (P0 + P1) / 2.0f : P0 + (threshold - V0) * (P1 - P0) / (V1 - V0);
 							break;
 						}
 						case 1: {
-							cube_vertices[l] = P1 + (threshold - V1) * (P2 - P1) / (V2 - V1);
+							cube_vertices[l] = !interpolation ? (P1 + P2) / 2.0f : P1 + (threshold - V1) * (P2 - P1) / (V2 - V1);
 							break;
 						}
 						case 2: {
-							cube_vertices[l] = P2 + (threshold - V2) * (P3 - P2) / (V3 - V2);
+							cube_vertices[l] = !interpolation ? (P2 + P3) / 2.0f : P2 + (threshold - V2) * (P3 - P2) / (V3 - V2);
 							break;
 						}
 						case 3: {
-							cube_vertices[l] = P3 + (threshold - V3) * (P0 - P3) / (V0 - V3);
+							cube_vertices[l] = !interpolation ? (P3 + P0) / 2.0f : P3 + (threshold - V3) * (P0 - P3) / (V0 - V3);
 							break;
 						}
 						case 4: {
-							cube_vertices[l] = P4 + (threshold - V4) * (P5 - P4) / (V5 - V4);
+							cube_vertices[l] = !interpolation ? (P4 + P5) / 2.0f : P4 + (threshold - V4) * (P5 - P4) / (V5 - V4);
 							break;
 						}
 						case 5: {
-							cube_vertices[l] = P5 + (threshold - V5) * (P6 - P5) / (V6 - V5);
+							cube_vertices[l] = !interpolation ? (P5 + P6) / 2.0f : P5 + (threshold - V5) * (P6 - P5) / (V6 - V5);
 							break;
 						}
 						case 6: {
-							cube_vertices[l] = P6 + (threshold - V6) * (P7 - P6) / (V7 - V6);
+							cube_vertices[l] = !interpolation ? (P6 + P7) / 2.0f : P6 + (threshold - V6) * (P7 - P6) / (V7 - V6);
 							break;
 						}
 						case 7: {
-							cube_vertices[l] = P7 + (threshold - V7) * (P4 - P7) / (V4 - V7);
+							cube_vertices[l] = !interpolation ? (P7 + P4) / 2.0f : P7 + (threshold - V7) * (P4 - P7) / (V4 - V7);
 							break;
 						}
 						case 8: {
-							cube_vertices[l] = P0 + (threshold - V0) * (P4 - P0) / (V4 - V0);
+							cube_vertices[l] = !interpolation ? (P0 + P4) / 2.0f : P0 + (threshold - V0) * (P4 - P0) / (V4 - V0);
 							break;
 						}
 						case 9: {
-							cube_vertices[l] = P1 + (threshold - V1) * (P5 - P1) / (V5 - V1);
+							cube_vertices[l] = !interpolation ? (P1 + P5) / 2.0f : P1 + (threshold - V1) * (P5 - P1) / (V5 - V1);
 							break;
 						}
 						case 10: {
-							cube_vertices[l] = P2 + (threshold - V2) * (P6 - P2) / (V6 - V2);
+							cube_vertices[l] = !interpolation ? (P2 + P6) / 2.0f : P2 + (threshold - V2) * (P6 - P2) / (V6 - V2);
 							break;
 						}
 						case 11: {
-							cube_vertices[l] = P3 + (threshold - V3) * (P7 - P3) / (V7 - V3);
+							cube_vertices[l] = !interpolation ? (P3 + P7) / 2.0f : P3 + (threshold - V3) * (P7 - P3) / (V7 - V3);
 							break;
 						}
 						default: {
@@ -205,17 +210,17 @@ void generate_marching_cubes_mesh() {
 					v1.position.x = cube_vertices[tri1].x;
 					v1.position.y = cube_vertices[tri1].y;
 					v1.position.z = cube_vertices[tri1].z;
-					v1.color = Colors::Grey;
+					v1.color = DirectX::XMFLOAT4(mesh_color[0], mesh_color[1], mesh_color[2], 1);
 					Vertex v2;
 					v2.position.x = cube_vertices[tri2].x;
 					v2.position.y = cube_vertices[tri2].y;
 					v2.position.z = cube_vertices[tri2].z;
-					v2.color = Colors::Grey;
+					v2.color = DirectX::XMFLOAT4(mesh_color[0], mesh_color[1], mesh_color[2], 1);
 					Vertex v3;
 					v3.position.x = cube_vertices[tri3].x;
 					v3.position.y = cube_vertices[tri3].y;
 					v3.position.z = cube_vertices[tri3].z;
-					v3.color = Colors::Grey;
+					v3.color = DirectX::XMFLOAT4(mesh_color[0], mesh_color[1], mesh_color[2], 1);
 					DirectX::XMStoreFloat3(&v1.normal, DirectX::XMVector3Cross(DirectX::XMVectorSet(v2.position.x - v1.position.x,
 						v2.position.y - v1.position.y,
 						v2.position.z - v1.position.z, 0),
@@ -246,6 +251,41 @@ void generate_marching_cubes_mesh() {
 	// Create hardware vertex buffer
 	if (vertex_buffer) vertex_buffer->Release();
 	d3d_device->CreateBuffer(&vertex_buffer_desc, &vertex_subresource_data, &vertex_buffer);
+}
+// Surrounding cube
+Vertex* cube_buffer_data = nullptr;
+D3D11_BUFFER_DESC cube_buffer_desc;
+D3D11_SUBRESOURCE_DATA cube_subresource_data;
+ID3D11Buffer* cube_buffer = nullptr;
+UINT* cube_indices_data = nullptr;
+D3D11_BUFFER_DESC cube_indices_desc;
+D3D11_SUBRESOURCE_DATA cube_indices_subresource_data;
+ID3D11Buffer* cube_index_buffer = nullptr;
+void generate_cube() {
+	// Initialize cube
+	if (cube_buffer_data) delete[] cube_buffer_data;
+	cube_buffer_data = new Vertex[8];
+	cube_buffer_data[0] = { {-cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[1] = { {cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[2] = { {cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[3] = { {-cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[4] = { {-cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[5] = { {cube_size / 2.0f, -cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[6] = { {cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
+	cube_buffer_data[7] = { {-cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
+	// Create cube vertex buffer
+	cube_buffer_desc.ByteWidth = 8 * sizeof(Vertex);
+	cube_buffer_desc.Usage = D3D11_USAGE_IMMUTABLE;
+	cube_buffer_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	cube_buffer_desc.CPUAccessFlags = 0;
+	cube_buffer_desc.MiscFlags = 0;
+	cube_buffer_desc.StructureByteStride = sizeof(Vertex);
+	cube_subresource_data.pSysMem = cube_buffer_data;
+	// Create hardware cube vertex buffer
+	if (cube_buffer) cube_buffer->Release();
+	d3d_device->CreateBuffer(&cube_buffer_desc, &cube_subresource_data, &cube_buffer);
+	cube_indices_subresource_data.pSysMem = cube_indices_data;
+	d3d_device->CreateBuffer(&cube_indices_desc, &cube_indices_subresource_data, &cube_index_buffer);
 }
 
 // Camera
@@ -387,6 +427,20 @@ LRESULT CALLBACK WindowCallback(HWND hwnd, UINT message, WPARAM wParam, LPARAM l
 		ID3D11Buffer* transform_buffer;
 		d3d_device->CreateBuffer(&transform_desc, &transform_subres_data, &transform_buffer);
 		d3d_context->VSSetConstantBuffers(0, 1, &transform_buffer);
+
+		// Create buffer with camera position
+		D3D11_BUFFER_DESC cam_pos_desc;
+		cam_pos_desc.ByteWidth = sizeof(DirectX::XMVECTOR);
+		cam_pos_desc.Usage = D3D11_USAGE_DYNAMIC;
+		cam_pos_desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cam_pos_desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+		cam_pos_desc.MiscFlags = 0;
+		cam_pos_desc.StructureByteStride = 0;
+		D3D11_SUBRESOURCE_DATA cam_pos_subres_data;
+		cam_pos_subres_data.pSysMem = &camera_position;
+		ID3D11Buffer* cam_pos_buffer;
+		d3d_device->CreateBuffer(&cam_pos_desc, &cam_pos_subres_data, &cam_pos_buffer);
+		d3d_context->VSSetConstantBuffers(1, 1, &cam_pos_buffer);
 		break;
 	}
 	default:
@@ -542,7 +596,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 	d3d_device->CreatePixelShader(pixel_shader_blob->GetBufferPointer(), pixel_shader_blob->GetBufferSize(), nullptr, &pixel_shader);
 	d3d_context->PSSetShader(pixel_shader, nullptr, 0);
 
-	// Create perspective transform and bind ti to the vertex shader
+	// Create perspective transform and bind it to the vertex shader
 	DirectX::XMMATRIX persp_transf;
 	persp_transf = DirectX::XMMatrixTranspose(DirectX::XMMatrixLookAtRH(camera_position, camera_lookat_vector, camera_up) * DirectX::XMMatrixPerspectiveFovRH(DirectX::XM_PI / 4.0f,
 		float(screen_width) / float(screen_height),
@@ -576,7 +630,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 	d3d_context->VSSetConstantBuffers(1, 1, &cam_pos_buffer);
 
 	// Initialize cube
-	Vertex* cube_buffer_data = new Vertex[8];
+	cube_buffer_data = new Vertex[8];
 	cube_buffer_data[0] = { {-cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
 	cube_buffer_data[1] = { {cube_size / 2.0f, cube_size / 2.0f, -cube_size / 2.0f}, Colors::Grey };
 	cube_buffer_data[2] = { {cube_size / 2.0f, cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
@@ -586,17 +640,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 	cube_buffer_data[6] = { {cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
 	cube_buffer_data[7] = { {-cube_size / 2.0f, -cube_size / 2.0f, cube_size / 2.0f}, Colors::Grey };
 	// Create cube vertex buffer
-	D3D11_BUFFER_DESC cube_buffer_desc;
 	cube_buffer_desc.ByteWidth = 8 * sizeof(Vertex);
 	cube_buffer_desc.Usage = D3D11_USAGE_IMMUTABLE;
 	cube_buffer_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	cube_buffer_desc.CPUAccessFlags = 0;
 	cube_buffer_desc.MiscFlags = 0;
 	cube_buffer_desc.StructureByteStride = sizeof(Vertex);
-	D3D11_SUBRESOURCE_DATA cube_subresource_data;
 	cube_subresource_data.pSysMem = cube_buffer_data;
 	// Create hardware cube vertex buffer
-	ID3D11Buffer* cube_buffer = nullptr;
 	d3d_device->CreateBuffer(&cube_buffer_desc, &cube_subresource_data, &cube_buffer);
 	// Create cube indices data
 	UINT* cube_indices_data = new UINT[24];
@@ -634,7 +685,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 	cube_indices_desc.StructureByteStride = sizeof(UINT);
 	D3D11_SUBRESOURCE_DATA cube_indices_subresource_data;
 	cube_indices_subresource_data.pSysMem = cube_indices_data;
-	// Create hardware vertex index buffer and bind it to the input assembler
+	// Create hardware vertex index buffer
 	ID3D11Buffer* cube_index_buffer = nullptr;
 	d3d_device->CreateBuffer(&cube_indices_desc, &cube_indices_subresource_data, &cube_index_buffer);
 	// Create cube vertex shader
@@ -647,6 +698,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 		&cube_vertex_shader);
 
 	//Generate marching cubes mesh
+	generate_marching_cubes_grid();
 	generate_marching_cubes_mesh();
 
 	// Initialize initial camera position and orientation
@@ -704,7 +756,31 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 		// Render imgui widgets
-		// TODO
+		if (ImGui::Begin("Marching Cubes Parameters", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+			if (ImGui::DragInt("Resolution", &resolution, 1.0f, 2.0f, 50.0f)) {
+				generate_marching_cubes_grid();
+				generate_marching_cubes_mesh();
+			}
+			if (ImGui::DragFloat("Threshold", &threshold, 0.01f, 0, 1)) {
+				generate_marching_cubes_mesh();
+			}
+			if (ImGui::DragFloat("Size", &cube_size, 0.1f, 2.0f, 50.0f)) {
+				generate_marching_cubes_grid();
+				generate_marching_cubes_mesh();
+				generate_cube();
+			}
+			if (ImGui::Checkbox("Interpolation", &interpolation)) {
+				generate_marching_cubes_mesh();
+			}
+			if (ImGui::ColorPicker3("Mesh Color", mesh_color, ImGuiColorEditFlags_NoAlpha)) {
+				generate_marching_cubes_mesh();
+			}
+			if (ImGui::Button("Generate")) {
+				generate_marching_cubes_grid();
+				generate_marching_cubes_mesh();
+			}
+			ImGui::End();
+		}
 		
 		ImGui::Render();
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
